@@ -96,7 +96,7 @@ class _Controller {
   }
 
   void profile(int index) async{
-    bool friends = await FireBaseController.checkFriends(_state.user);
+    bool friends = await FireBaseController.checkFriends(_state.user, _state.searchResults[index]);
     await Navigator.pushNamed(
       _state.context, ProfileScreen.routeName, arguments: {'profile': _state.searchResults[index], 'user': _state.user, 'friends': friends}
     );

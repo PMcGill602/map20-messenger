@@ -80,9 +80,10 @@ class FireBaseController {
       return null;
   }
 
-  static Future<bool> checkFriends(User user) async {
+  static Future<bool> checkFriends(User user, StoredUserInfo toBeChecked) async {
     QuerySnapshot snapshot = await FirebaseFirestore.instance
         .collection(StoredUserInfo.COLLECTION)
+        .where(StoredUserInfo.UID, isEqualTo: toBeChecked.uid)
         .where(StoredUserInfo.FRIENDS, arrayContains: user.uid)
         .get();
     return snapshot.docs.isNotEmpty;
