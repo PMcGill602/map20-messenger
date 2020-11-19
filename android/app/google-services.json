@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "45234421880",
+    "firebase_url": "https://patrick-map2020-messenger.firebaseio.com",
+    "project_id": "patrick-map2020-messenger",
+    "storage_bucket": "patrick-map2020-messenger.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:45234421880:android:2dd3e93aad1e2c3b792d8d",
+        "android_client_info": {
+          "package_name": "edu.uco.pmcgill.map2020.messengerapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "45234421880-gutmj9otm3d7q1jft4bdbhh4c7icg66v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCR6_mPLjSPmZj9a9JZx3MKCieoNrZ_QBY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "45234421880-gutmj9otm3d7q1jft4bdbhh4c7icg66v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
