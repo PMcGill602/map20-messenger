@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:messengerapp/controller/firebasecontroller.dart';
+import 'package:messengerapp/model/chat.dart';
+import 'package:messengerapp/model/message.dart';
 import 'package:messengerapp/model/storeduserinfo.dart';
 
 class FriendRequestsScreen extends StatefulWidget {
@@ -13,7 +14,7 @@ class FriendRequestsScreen extends StatefulWidget {
 
 class _FriendRequestsState extends State<FriendRequestsScreen> {
   _Controller con;
-  User user;
+  StoredUserInfo user;
   List<StoredUserInfo> requests;
 
   @override
@@ -33,7 +34,7 @@ class _FriendRequestsState extends State<FriendRequestsScreen> {
       appBar: AppBar(
         title: Text('Friend Requests'),
       ),
-      body: requests != null
+      body: requests.isNotEmpty
           ? ListView.builder(
               itemCount: requests.length,
               itemBuilder: (BuildContext context, int index) => Container(
@@ -68,12 +69,19 @@ class _Controller {
   _FriendRequestsState _state;
   _Controller(this._state);
 
-  void accept(StoredUserInfo toAccept, User user, int index) async {
+  void accept(StoredUserInfo toAccept, StoredUserInfo user, int index) async {
     await FireBaseController.acceptRequest(toAccept: toAccept, user: user);
+    var m = <Message>[];
+   
+    var c = Chat(
+        messages: m,
+        chatId: user.uid + '-' + toAccept.uid,
+      );
+    c.docId = await FireBaseController.createChat(c: c);
     _state.render(() => _state.requests.removeAt(index));
   }
 
-  void decline(StoredUserInfo toDecline, User user, int index) async {
+  void decline(StoredUserInfo toDecline, StoredUserInfo user, int index) async {
     await FireBaseController.declineRequest(user: user, toDecline: toDecline);
     _state.render(() => _state.requests.removeAt(index));
   }

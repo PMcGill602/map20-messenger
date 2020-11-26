@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:messengerapp/screens/friendrequests_screen.dart';
+import 'package:messengerapp/screens/friendslist_screen.dart';
+import 'package:messengerapp/screens/groupchatdetailed_screen.dart';
+import 'package:messengerapp/screens/groupchats_screen.dart';
 import 'package:messengerapp/screens/home_screen.dart';
+import 'package:messengerapp/screens/messages_screen.dart';
+import 'package:messengerapp/screens/post_screen.dart';
 import 'package:messengerapp/screens/profile_screen.dart';
 import 'package:messengerapp/screens/search_screen.dart';
 import 'package:messengerapp/screens/signin_screen.dart';
@@ -25,6 +30,11 @@ class MessengerApp extends StatelessWidget {
         SearchScreen.routeName: (context) => SearchScreen(),
         ProfileScreen.routeName: (context) => ProfileScreen(),
         FriendRequestsScreen.routeName: (context) => FriendRequestsScreen(),
+        PostScreen.routeName: (context) => PostScreen(),
+        FriendsListScreen.routeName: (context) => FriendsListScreen(),
+        MessagesScreen.routeName: (context) => MessagesScreen(),
+        GroupChatsScreen.routeName: (context) => GroupChatsScreen(),
+        GroupChatDetailedScreen.routeName: (context) => GroupChatDetailedScreen(),
       },
     );
   }

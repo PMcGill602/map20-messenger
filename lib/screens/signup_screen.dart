@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:messengerapp/controller/firebasecontroller.dart';
-import 'package:messengerapp/model/storeduserinfo.dart';
 import 'package:messengerapp/screens/views/mydialog.dart';
 
 class SignUpScreen extends StatefulWidget {

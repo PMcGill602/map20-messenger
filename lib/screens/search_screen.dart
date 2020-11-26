@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:messengerapp/controller/firebasecontroller.dart';
+import 'package:messengerapp/model/post.dart';
 import 'package:messengerapp/model/storeduserinfo.dart';
 import 'package:messengerapp/screens/profile_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:messengerapp/screens/views/mydialog.dart';
 
 class SearchScreen extends StatefulWidget {
   static const routeName = '/signInScreen/homeScreen/searchScreen';
@@ -14,7 +15,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchState extends State<SearchScreen> {
   _Controller con;
-  User user;
+  StoredUserInfo user;
   var formKey = GlobalKey<FormState>();
   List<StoredUserInfo> searchResults;
   @override
@@ -95,11 +96,26 @@ class _Controller {
     _state.render(() => _state.searchResults = results);
   }
 
-  void profile(int index) async{
-    bool friends = await FireBaseController.checkFriends(_state.user, _state.searchResults[index]);
-    await Navigator.pushNamed(
-      _state.context, ProfileScreen.routeName, arguments: {'profile': _state.searchResults[index], 'user': _state.user, 'friends': friends}
-    );
-    _state.render((){});
+  void profile(int index) async {
+    try {
+      List<Post> posts;
+      posts = await FireBaseController.getPosts(user: _state.searchResults[index]);
+      bool friends = await FireBaseController.checkFriends(
+          _state.user, _state.searchResults[index]);
+      await Navigator.pushNamed(_state.context, ProfileScreen.routeName,
+          arguments: {
+            'profile': _state.searchResults[index],
+            'user': _state.user,
+            'friends': friends,
+            'posts' : posts,
+          });
+      _state.render(() {});
+    } catch (e) {
+      MyDialog.info(
+        context: _state.context,
+        title: 'Error accessing profile',
+        content: e.message ?? e.toString(),
+      );
+    }
   }
 }

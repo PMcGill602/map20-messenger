@@ -15,14 +15,15 @@ class StoredUserInfo {
   List<dynamic> friends;
   Map<String, dynamic> requests;
 
-  StoredUserInfo(
-      {this.docId,
-      this.uid,
-      this.email,
-      this.displayName,
-      this.biography,
-      this.friends,
-      this.requests}) {
+  StoredUserInfo({
+    this.docId,
+    this.uid,
+    this.email,
+    this.displayName,
+    this.biography,
+    this.friends,
+    this.requests,
+  }) {
     this.friends ??= [];
     this.requests ??= {};
   }
@@ -40,13 +41,14 @@ class StoredUserInfo {
 
   static StoredUserInfo deserialize(Map<String, dynamic> data, String docId) {
     return StoredUserInfo(
-        docId: docId,
-        uid: data[StoredUserInfo.UID],
-        email: data[StoredUserInfo.EMAIL],
-        displayName: data[StoredUserInfo.DISPLAY_NAME],
-        biography: data[StoredUserInfo.BIOGRAPHY],
-        friends: data[StoredUserInfo.FRIENDS],
-        requests: data[StoredUserInfo.REQUESTS]);
+      docId: docId,
+      uid: data[StoredUserInfo.UID],
+      email: data[StoredUserInfo.EMAIL],
+      displayName: data[StoredUserInfo.DISPLAY_NAME],
+      biography: data[StoredUserInfo.BIOGRAPHY],
+      friends: data[StoredUserInfo.FRIENDS],
+      requests: data[StoredUserInfo.REQUESTS],
+    );
   }
 
   @override

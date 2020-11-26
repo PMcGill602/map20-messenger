@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:messengerapp/controller/firebasecontroller.dart';
+import 'package:messengerapp/model/post.dart';
 import 'package:messengerapp/model/storeduserinfo.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:messengerapp/screens/post_screen.dart';
 import 'package:messengerapp/screens/views/mydialog.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -14,9 +15,10 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileState extends State<ProfileScreen> {
   _Controller con;
-  User user;
+  StoredUserInfo user;
   StoredUserInfo profile;
   bool friends;
+  List<Post> posts;
   @override
   void initState() {
     super.initState();
@@ -31,20 +33,45 @@ class _ProfileState extends State<ProfileScreen> {
     profile ??= arg['profile'];
     user ??= arg['user'];
     friends ??= arg['friends'];
+    posts ??= arg['posts'];
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile'),
       ),
+      floatingActionButton: user.uid == profile.uid
+          ? FloatingActionButton(
+              child: Icon(Icons.add_comment),
+              onPressed: con.newPostNavigate,
+            )
+          : null,
       body: Column(children: <Widget>[
         Text(profile.email),
-        friends
-            ? Text('We are friends')
-            : Column(
-                children: <Widget>[
-                  Text('We are not friends'),
-                  RaisedButton(onPressed: con.sendRequest, child: Text('Send friend request'))
-                ],
-              ),
+        user.uid != profile.uid
+            ? friends
+                ? Text('We are friends')
+                : Column(
+                    children: <Widget>[
+                      Text('We are not friends'),
+                      RaisedButton(
+                          onPressed: con.sendRequest,
+                          child: Text('Send friend request'))
+                    ],
+                  )
+            : Text('Its me!'),
+        Flexible(
+          child: !friends && user.uid != profile.uid
+              ? Text("Become friends to see this user's posts")
+              : posts != null
+                  ? ListView.builder(
+                      itemCount: posts.length,
+                      itemBuilder: (BuildContext context, int index) =>
+                          Container(
+                            child: ListTile(
+                              title: Text(posts[index].message),
+                            ),
+                          ))
+                  : Text('No posts'),
+        )
       ]),
     );
   }
@@ -53,24 +80,32 @@ class _ProfileState extends State<ProfileScreen> {
 class _Controller {
   _ProfileState _state;
   _Controller(this._state);
+  String post;
 
   void sendRequest() async {
     MyDialog.circularProgressStart(_state.context);
     try {
-      await FireBaseController.sendFriendRequest(sender: _state.user, recipient: _state.profile );
+      await FireBaseController.sendFriendRequest(
+          sender: _state.user, recipient: _state.profile);
       MyDialog.circularProgressEnd(_state.context);
       MyDialog.info(
         context: _state.context,
         title: 'Friend request sent!',
         content: '',
       );
-    } catch(e) {
+    } catch (e) {
       MyDialog.circularProgressEnd(_state.context);
       MyDialog.info(
         context: _state.context,
         title: 'Friend request error',
-        content: e.message ?? e.toString(),
+        content: e.toString(),
       );
     }
+  }
+
+  void newPostNavigate() async {
+    await Navigator.pushNamed(_state.context, PostScreen.routeName,
+        arguments: {'user': _state.user, 'posts': _state.posts});
+    _state.render(() {});
   }
 }

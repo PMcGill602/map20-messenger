@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:messengerapp/controller/firebasecontroller.dart';
+import 'package:messengerapp/model/storeduserinfo.dart';
 import 'package:messengerapp/screens/home_screen.dart';
 import 'package:messengerapp/screens/signup_screen.dart';
 import 'package:messengerapp/screens/views/mydialog.dart';
@@ -113,9 +114,11 @@ class _Controller {
       );
       return;
     }
+    StoredUserInfo thisUser;
+    thisUser = await FireBaseController.getThisUser(user: user);
     MyDialog.circularProgressEnd(_state.context);
     Navigator.pushReplacementNamed(_state.context, HomeScreen.routeName,
-        arguments: {'user': user});
+        arguments: {'user': thisUser});
   }
 
   String validatorEmail(String value) {

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:messengerapp/controller/firebasecontroller.dart';
+import 'package:messengerapp/model/groupchat.dart';
+import 'package:messengerapp/model/post.dart';
 import 'package:messengerapp/model/storeduserinfo.dart';
 import 'package:messengerapp/screens/friendrequests_screen.dart';
+import 'package:messengerapp/screens/friendslist_screen.dart';
+import 'package:messengerapp/screens/groupchats_screen.dart';
+import 'package:messengerapp/screens/profile_screen.dart';
 import 'package:messengerapp/screens/search_screen.dart';
 import 'package:messengerapp/screens/signin_screen.dart';
 import 'package:messengerapp/screens/views/mydialog.dart';
@@ -17,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeState extends State<HomeScreen> {
   _Controller con;
-  User user;
+  StoredUserInfo user;
   @override
   void initState() {
     super.initState();
@@ -49,15 +53,27 @@ class _HomeState extends State<HomeScreen> {
             ListTile(
               leading: Icon(Icons.people),
               title: Text('Friend Requests'),
-              onTap: con.friendRequests,
+              onTap: con.friendRequestsNavigate,
             ),
           ],
         ),
       ),
       body: Column(children: <Widget>[
-        FlatButton(
+        RaisedButton(
           child: Text('Find friends'),
           onPressed: con.searchNavigate,
+        ),
+        RaisedButton(
+          child: Text('My profile'),
+          onPressed: con.profileNavigate,
+        ),
+        RaisedButton(
+          child: Text('Friends list'),
+          onPressed: con.friendsListNavigate,
+        ),
+        RaisedButton(
+          child: Text('Group chats'),
+          onPressed: con.groupChatsNavigate,
         ),
       ]),
     );
@@ -83,9 +99,31 @@ class _Controller {
     _state.render(() {});
   }
 
-  void friendRequests() async {
+  void profileNavigate() async {
     try {
-      List<StoredUserInfo> requests = await FireBaseController.getRequests(user: _state.user);
+      List<Post> posts;
+      posts = await FireBaseController.getPosts(user: _state.user);
+      await Navigator.pushNamed(_state.context, ProfileScreen.routeName,
+          arguments: {
+            'profile': _state.user,
+            'user': _state.user,
+            'posts': posts,
+            'friends': true,
+          });
+      _state.render(() {});
+    } catch (e) {
+      MyDialog.info(
+        context: _state.context,
+        title: 'Error accessing profile',
+        content: e.message ?? e.toString(),
+      );
+    }
+  }
+
+  void friendRequestsNavigate() async {
+    try {
+      List<StoredUserInfo> requests =
+          await FireBaseController.getRequests(user: _state.user);
       await Navigator.pushNamed(_state.context, FriendRequestsScreen.routeName,
           arguments: {'user': _state.user, 'requests': requests});
     } catch (e) {
@@ -96,5 +134,36 @@ class _Controller {
       );
     }
     _state.render(() {});
+  }
+
+  void friendsListNavigate() async {
+    try {
+      List<StoredUserInfo> friends =
+          await FireBaseController.getFriends(user: _state.user);
+      await Navigator.pushNamed(_state.context, FriendsListScreen.routeName,
+          arguments: {'user': _state.user, 'friends': friends, 'groupChat': null, 'groupChatAdd' : false});
+    } catch (e) {
+      MyDialog.info(
+        context: _state.context,
+        title: 'Friends list error',
+        content: e.message ?? e.toString(),
+      );
+    }
+  }
+
+  void groupChatsNavigate() async {
+    try {
+      List<StoredUserInfo> friends =
+          await FireBaseController.getFriends(user: _state.user);
+      List<GroupChat> groupChats = await FireBaseController.getGroupChats(user: _state.user);
+      await Navigator.pushNamed(_state.context, GroupChatsScreen.routeName,
+          arguments: {'user': _state.user, 'friends': friends, 'groupChats' : groupChats});
+    } catch (e) {
+      MyDialog.info(
+        context: _state.context,
+        title: 'Group chats error',
+        content: e.message ?? e.toString(),
+      );
+    }
   }
 }
