@@ -81,12 +81,14 @@ class _Controller {
   _Controller(this._state);
 
   void messagesNavigate(StoredUserInfo friend, StoredUserInfo user) async {
-    try {
+    //try {
       var c = Chat();
       c = await FireBaseController.getChat(user: user, friend: friend);
       var m = <Message>[];
-      for (var message in c.messages) {
-        m.add(Message.deserialize(message));
+      if (c.messages != null && c.messages.length != 0) {
+        for (var message in c.messages) {
+          m.add(Message.deserialize(message));
+        }
       }
       await Navigator.pushNamed(_state.context, MessagesScreen.routeName,
           arguments: {
@@ -95,13 +97,13 @@ class _Controller {
             'chat': c,
             'messages': m
           });
-    } catch (e) {
-      MyDialog.info(
-        context: _state.context,
-        title: 'Messages error, try again later',
-        content: e.toString(),
-      );
-    }
+    // } catch (e) {
+    //   MyDialog.info(
+    //     context: _state.context,
+    //     title: 'Messages error, try again later',
+    //     content: e.toString(),
+    //   );
+    // }
   }
 
   void unfriend(
@@ -128,12 +130,10 @@ class _Controller {
 
   void addToGroupChat(StoredUserInfo toAdd) async {
     try {
-      await FireBaseController.addToGroupChat(toAdd: toAdd, g: _state.groupChat);
+      await FireBaseController.addToGroupChat(
+          toAdd: toAdd, g: _state.groupChat);
       MyDialog.info(
-        context: _state.context,
-        title: "Successfully added",
-        content: ''
-      );
+          context: _state.context, title: "Successfully added", content: '');
     } catch (e) {
       MyDialog.info(
         context: _state.context,
