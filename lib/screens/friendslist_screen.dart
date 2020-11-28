@@ -81,7 +81,7 @@ class _Controller {
   _Controller(this._state);
 
   void messagesNavigate(StoredUserInfo friend, StoredUserInfo user) async {
-    //try {
+    try {
       var c = Chat();
       c = await FireBaseController.getChat(user: user, friend: friend);
       var m = <Message>[];
@@ -97,13 +97,13 @@ class _Controller {
             'chat': c,
             'messages': m
           });
-    // } catch (e) {
-    //   MyDialog.info(
-    //     context: _state.context,
-    //     title: 'Messages error, try again later',
-    //     content: e.toString(),
-    //   );
-    // }
+    } catch (e) {
+      MyDialog.info(
+        context: _state.context,
+        title: 'Messages error, try again later',
+        content: e.toString(),
+      );
+    }
   }
 
   void unfriend(

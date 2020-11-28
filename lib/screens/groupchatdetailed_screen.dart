@@ -42,7 +42,11 @@ class _GroupChatDetailedState extends State<GroupChatDetailedScreen> {
           '${groupChat.name}',
         ),
         actions: <Widget>[
-          user.uid == groupChat.ownerId ? IconButton(icon: Icon(Icons.add), onPressed: con.addMembers) : SizedBox(width: 0,)
+          user.uid == groupChat.ownerId
+              ? IconButton(icon: Icon(Icons.add), onPressed: con.addMembers)
+              : SizedBox(
+                  width: 0,
+                )
         ],
       ),
       body: Column(
@@ -59,7 +63,14 @@ class _GroupChatDetailedState extends State<GroupChatDetailedScreen> {
                   children: [
                     ListTile(
                       title: Text(messages[index].text),
-                      subtitle: Text(messages[index].createdAt.toString()),
+                      subtitle: Text(messages[index].createdAt.toString() +
+                          '\n' +
+                          (user.uid == messages[index].createdBy
+                              ? user.displayName
+                              : friends
+                                  .firstWhere((friend) =>
+                                      friend.uid == messages[index].createdBy)
+                                  .displayName)),
                     ),
                   ],
                 ),

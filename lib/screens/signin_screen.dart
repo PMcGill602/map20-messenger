@@ -116,9 +116,11 @@ class _Controller {
     }
     StoredUserInfo thisUser;
     thisUser = await FireBaseController.getThisUser(user: user);
+    List<StoredUserInfo> friends =
+          await FireBaseController.getFriends(user: thisUser);
     MyDialog.circularProgressEnd(_state.context);
     Navigator.pushReplacementNamed(_state.context, HomeScreen.routeName,
-        arguments: {'user': thisUser});
+        arguments: {'user': thisUser, 'friends' : friends});
   }
 
   String validatorEmail(String value) {

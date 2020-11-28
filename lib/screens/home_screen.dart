@@ -22,6 +22,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeState extends State<HomeScreen> {
   _Controller con;
   StoredUserInfo user;
+  List<StoredUserInfo> friends;
   @override
   void initState() {
     super.initState();
@@ -34,6 +35,7 @@ class _HomeState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     Map arg = ModalRoute.of(context).settings.arguments;
     user ??= arg['user'];
+    friends ??= arg['friends'];
     return Scaffold(
       appBar: AppBar(
         title: Text('Home'),
@@ -138,10 +140,8 @@ class _Controller {
 
   void friendsListNavigate() async {
     try {
-      List<StoredUserInfo> friends =
-          await FireBaseController.getFriends(user: _state.user);
       await Navigator.pushNamed(_state.context, FriendsListScreen.routeName,
-          arguments: {'user': _state.user, 'friends': friends, 'groupChat': null, 'groupChatAdd' : false});
+          arguments: {'user': _state.user, 'friends': _state.friends, 'groupChat': null, 'groupChatAdd' : false});
     } catch (e) {
       MyDialog.info(
         context: _state.context,
@@ -153,11 +153,9 @@ class _Controller {
 
   void groupChatsNavigate() async {
     try {
-      List<StoredUserInfo> friends =
-          await FireBaseController.getFriends(user: _state.user);
       List<GroupChat> groupChats = await FireBaseController.getGroupChats(user: _state.user);
       await Navigator.pushNamed(_state.context, GroupChatsScreen.routeName,
-          arguments: {'user': _state.user, 'friends': friends, 'groupChats' : groupChats});
+          arguments: {'user': _state.user, 'friends': _state.friends, 'groupChats' : groupChats});
     } catch (e) {
       MyDialog.info(
         context: _state.context,
