@@ -20,6 +20,7 @@ class _GroupChatDetailedState extends State<GroupChatDetailedScreen> {
   var formKey = GlobalKey<FormState>();
   GroupChat groupChat;
   List<Message> messages;
+  List<StoredUserInfo> members;
   StoredUserInfo user;
   List<StoredUserInfo> friends;
   @override
@@ -34,6 +35,7 @@ class _GroupChatDetailedState extends State<GroupChatDetailedScreen> {
     Map arg = ModalRoute.of(context).settings.arguments;
     groupChat ??= arg['groupChat'];
     messages ??= arg['messages'];
+    members ??= arg['members'];
     user ??= arg['user'];
     friends ??= arg['friends'];
     return Scaffold(
@@ -46,7 +48,45 @@ class _GroupChatDetailedState extends State<GroupChatDetailedScreen> {
               ? IconButton(icon: Icon(Icons.add), onPressed: con.addMembers)
               : SizedBox(
                   width: 0,
-                )
+                ),
+          IconButton(
+              icon: Icon(Icons.people),
+              onPressed: () {
+                showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                          content: Container(
+                        width: double.maxFinite,
+                        child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: members.length,
+                                  itemBuilder: (BuildContext context,
+                                          int index) =>
+                                      Container(
+                                          child: ListTile(
+                                        leading: Icon(Icons.face),
+                                        title: Text(members[index].displayName),
+                                        subtitle: Text(members[index].email),
+                                        trailing: user.uid ==
+                                                    groupChat.ownerId &&
+                                                user.uid != members[index].uid
+                                            ? IconButton(
+                                                icon: Icon(Icons.close),
+                                                onPressed: () {
+                                                  con.removeMember(index);
+                                                })
+                                            : SizedBox(
+                                                width: 0,
+                                              ),
+                                      )))
+                            ]),
+                      ));
+                    });
+              })
         ],
       ),
       body: Column(
@@ -65,12 +105,7 @@ class _GroupChatDetailedState extends State<GroupChatDetailedScreen> {
                       title: Text(messages[index].text),
                       subtitle: Text(messages[index].createdAt.toString() +
                           '\n' +
-                          (user.uid == messages[index].createdBy
-                              ? user.displayName
-                              : friends
-                                  .firstWhere((friend) =>
-                                      friend.uid == messages[index].createdBy)
-                                  .displayName)),
+                          messages[index].displayName),
                     ),
                   ],
                 ),
@@ -125,11 +160,14 @@ class _Controller {
       var m = Message(
         createdAt: DateTime.now(),
         createdBy: _state.user.uid,
+        displayName: _state.user.displayName,
         text: message,
       );
-      await FireBaseController.sendGroupChatMessage(
-          sender: _state.user, m: m, g: _state.groupChat);
-      _state.render(() => _state.messages.add(m));
+      await FireBaseController.sendGroupChatMessage(m: m, g: _state.groupChat);
+      _state.render(() {
+        _state.messages.add(m);
+        _state.groupChat.messages.add(m.serialize());
+      });
       FocusScope.of(_state.context).unfocus();
       _state.formKey.currentState.reset();
     } catch (e) {
@@ -157,5 +195,33 @@ class _Controller {
         content: e.toString(),
       );
     }
+  }
+
+  void removeMember(int index) async {
+    MyDialog.prompt(
+        context: _state.context,
+        title: 'Are you sure you want to remove this user?',
+        content: 'They will no longer have access to this group chat',
+        fn: () async {
+          try {
+            var m = Message(
+              createdAt: DateTime.now(),
+              createdBy: null,
+              displayName: "System message",
+              text:
+                  "${_state.members[index].displayName} has been removed from the group chat",
+            );
+            await FireBaseController.leaveGroupChat(
+                toLeave: _state.members[index], g: _state.groupChat, m: m);
+            Navigator.of(_state.context).pop();
+            _state.render(() => _state.members.removeAt(index));
+          } catch (e) {
+            MyDialog.info(
+              context: _state.context,
+              title: 'Remove member error, try again later',
+              content: e.toString(),
+            );
+          }
+        });
   }
 }

@@ -240,9 +240,7 @@ class FireBaseController {
   }
 
   static Future sendGroupChatMessage(
-      {@required StoredUserInfo sender,
-      @required Message m,
-      @required GroupChat g}) async {
+      {@required Message m, @required GroupChat g}) async {
     await FirebaseFirestore.instance
         .collection(GroupChat.COLLECTION)
         .doc(g.docId)
@@ -251,8 +249,7 @@ class FireBaseController {
     });
   }
 
-  static Future createGroupChat(
-      {@required GroupChat g}) async {
+  static Future createGroupChat({@required GroupChat g}) async {
     DocumentReference ref = await FirebaseFirestore.instance
         .collection(GroupChat.COLLECTION)
         .add(g.serialize());
@@ -280,13 +277,42 @@ class FireBaseController {
         .collection(GroupChat.COLLECTION)
         .doc(g.docId)
         .update({
-      'members': FieldValue.arrayUnion([toAdd.serialize()],), 'userIds' : FieldValue.arrayUnion([toAdd.uid])
+      'userIds': FieldValue.arrayUnion([toAdd.uid])
     });
   }
 
-  static Future leaveGroupChat({@required StoredUserInfo toLeave, @required GroupChat g}) async{
+  static Future<List<StoredUserInfo>> getGroupChatMembers(GroupChat g) async {
+    var members = <StoredUserInfo>[];
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection(StoredUserInfo.COLLECTION)
+        .where(StoredUserInfo.UID, whereIn: g.userIds)
+        .get();
+    if (snapshot != null && snapshot.docs.length != 0) {
+      for (var doc in snapshot.docs) {
+        members.add(StoredUserInfo.deserialize(doc.data(), doc.id));
+      }
+    }
+    return members;
+  }
+
+  static Future leaveGroupChat(
+      {@required StoredUserInfo toLeave,
+      @required GroupChat g,
+      @required Message m}) async {
     g.userIds.remove(toLeave.uid);
-    g.members.remove(toLeave);
-    await FirebaseFirestore.instance.collection(GroupChat.COLLECTION).doc(g.docId).update(g.serialize());
+    await sendGroupChatMessage(m: m, g: g);
+    await FirebaseFirestore.instance
+        .collection(GroupChat.COLLECTION)
+        .doc(g.docId)
+        .update({
+      'userIds': FieldValue.arrayRemove([toLeave.uid])
+    });
+  }
+
+  static Future changeGroupChatName(GroupChat g) async {
+    await FirebaseFirestore.instance
+        .collection(GroupChat.COLLECTION)
+        .doc(g.docId)
+        .update(g.serialize());
   }
 }

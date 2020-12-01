@@ -7,6 +7,7 @@ import 'package:messengerapp/model/storeduserinfo.dart';
 import 'package:messengerapp/screens/messages_screen.dart';
 import 'package:messengerapp/screens/views/mydialog.dart';
 
+
 class FriendsListScreen extends StatefulWidget {
   static const routeName =
       '/signInScreen/homeScreen/profileScreen/friendsListScreen';
@@ -22,6 +23,8 @@ class _FriendsListState extends State<FriendsListScreen> {
   List<StoredUserInfo> friends;
   GroupChat groupChat;
   bool groupChatAdd;
+
+  
   @override
   void initState() {
     super.initState();
@@ -90,6 +93,7 @@ class _Controller {
           m.add(Message.deserialize(message));
         }
       }
+      
       await Navigator.pushNamed(_state.context, MessagesScreen.routeName,
           arguments: {
             'user': user,

@@ -19,6 +19,7 @@ class _GroupChatsState extends State<GroupChatsScreen> {
   StoredUserInfo user;
   List<StoredUserInfo> friends;
   List<GroupChat> groupChats;
+  var formKey = GlobalKey<FormState>();
   @override
   void initState() {
     super.initState();
@@ -54,9 +55,52 @@ class _GroupChatsState extends State<GroupChatsScreen> {
                             trailing: Wrap(
                               children: <Widget>[
                                 groupChats[index].ownerId != user.uid
+                                    ? SizedBox(
+                                        width: 0,
+                                      )
+                                    : IconButton(
+                                        icon: Icon(Icons.edit),
+                                        onPressed: () {
+                                          showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                  content: Form(
+                                                      key: formKey,
+                                                      child: Column(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: <Widget>[
+                                                            TextFormField(
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                hintText:
+                                                                    "Enter a name for your group chat",
+                                                              ),
+                                                              autocorrect:
+                                                                  false,
+                                                              validator: con
+                                                                  .validateGroupChatName,
+                                                              onSaved: con
+                                                                  .onSavedGroupChatName,
+                                                            ),
+                                                            RaisedButton(
+                                                                child: Text(
+                                                                    "Change name"),
+                                                                onPressed: () {
+                                                                  con.changeGroupChatName(
+                                                                      index);
+                                                                }),
+                                                          ])),
+                                                );
+                                              });
+                                        },
+                                      ),
+                                groupChats[index].ownerId != user.uid
                                     ? IconButton(
                                         icon: Icon(Icons.exit_to_app),
-                                        onPressed: () => con.leave(groupChats[index]))
+                                        onPressed: () =>
+                                            con.leave(groupChats[index]))
                                     : IconButton(
                                         icon: Icon(Icons.close),
                                         onPressed: con.delete),
@@ -75,13 +119,13 @@ class _GroupChatsState extends State<GroupChatsScreen> {
 class _Controller {
   _GroupChatsState _state;
   _Controller(this._state);
+  String name;
 
   void makeGroupChat() async {
     try {
       var m = <Message>[];
       var g = GroupChat(
         ownerId: _state.user.uid,
-        members: [_state.user.serialize()],
         messages: m,
         userIds: [_state.user.uid],
         name: 'New group chat',
@@ -100,16 +144,20 @@ class _Controller {
   void groupChatDetailedNavigate(GroupChat g) async {
     try {
       var m = <Message>[];
+      var members = <StoredUserInfo>[];
       for (var message in g.messages) {
         m.add(Message.deserialize(message));
       }
+      members = await FireBaseController.getGroupChatMembers(g);
       await Navigator.pushNamed(
-          _state.context, GroupChatDetailedScreen.routeName, arguments: {
-        'groupChat': g,
-        'messages': m,
-        'user': _state.user,
-        'friends': _state.friends
-      });
+          _state.context, GroupChatDetailedScreen.routeName,
+          arguments: {
+            'groupChat': g,
+            'messages': m,
+            'members': members,
+            'user': _state.user,
+            'friends': _state.friends
+          });
     } catch (e) {
       MyDialog.info(
         context: _state.context,
@@ -121,15 +169,52 @@ class _Controller {
 
   void delete() {}
 
-  void leave(GroupChat g) async{
+  void leave(GroupChat g) async {
+    var m = Message(
+        createdAt: DateTime.now(),
+        createdBy: null,
+        displayName: "System message",
+        text: "${_state.user.displayName} has left the group chat",
+      );
     try {
-      await FireBaseController.leaveGroupChat(toLeave: _state.user, g: g);
+      
+      await FireBaseController.leaveGroupChat(toLeave: _state.user, g: g, m: m);
       _state.render(() => _state.groupChats.remove(g));
     } catch (e) {
       MyDialog.info(
         context: _state.context,
         title: 'Error leaving group chat',
         content: e.message ?? e.toString(),
+      );
+    }
+  }
+
+  String validateGroupChatName(String value) {
+    if (value.length < 1) {
+      return 'Name cannot be empty';
+    } else
+      return null;
+  }
+
+  void onSavedGroupChatName(String value) {
+    this.name = value;
+  }
+
+  void changeGroupChatName(int index) async {
+    if (!_state.formKey.currentState.validate()) {
+      return;
+    }
+    _state.formKey.currentState.save();
+    try {
+      _state.groupChats[index].name = this.name;
+      await FireBaseController.changeGroupChatName(_state.groupChats[index]);
+      Navigator.of(_state.context).pop();
+      _state.render(() => _state.groupChats[index].name = this.name);
+    } catch (e) {
+      MyDialog.info(
+        context: _state.context,
+        title: 'Error changing group chat name, try again later',
+        content: e.toString(),
       );
     }
   }
