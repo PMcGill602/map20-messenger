@@ -89,47 +89,53 @@ class _GroupChatDetailedState extends State<GroupChatDetailedScreen> {
               })
         ],
       ),
-      body: Column(
-        children: <Widget>[
-          Text('Start of message history'),
-          Flexible(
-            child: ListView.builder(
-              itemCount: messages.length,
-              itemBuilder: (BuildContext context, int index) => Container(
-                padding: messages[index].createdBy != user.uid
-                    ? EdgeInsets.fromLTRB(10, 5, 250, 5)
-                    : EdgeInsets.fromLTRB(250, 5, 5, 5),
-                child: Column(
-                  children: [
-                    ListTile(
-                      title: Text(messages[index].text),
-                      subtitle: Text(messages[index].createdAt.toString() +
-                          '\n' +
-                          messages[index].displayName),
-                    ),
-                  ],
+      body: WillPopScope(
+        onWillPop: () async {
+          Navigator.pop(context, groupChat);
+          return true;
+        },
+        child: Column(
+          children: <Widget>[
+            Text('Start of message history'),
+            Flexible(
+              child: ListView.builder(
+                itemCount: messages.length,
+                itemBuilder: (BuildContext context, int index) => Container(
+                  padding: messages[index].createdBy != user.uid
+                      ? EdgeInsets.fromLTRB(10, 5, 250, 5)
+                      : EdgeInsets.fromLTRB(250, 5, 5, 5),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        title: Text(messages[index].text),
+                        subtitle: Text(messages[index].createdAt.toString() +
+                            '\n' +
+                            messages[index].displayName),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Form(
-            key: formKey,
-            child: TextFormField(
-              decoration: InputDecoration(
-                hintText: "Send a message",
+            Form(
+              key: formKey,
+              child: TextFormField(
+                decoration: InputDecoration(
+                  hintText: "Send a message",
+                ),
+                autocorrect: true,
+                keyboardType: TextInputType.multiline,
+                maxLines: 3,
+                validator: con.validatorMessage,
+                onSaved: con.onSavedMessage,
               ),
-              autocorrect: true,
-              keyboardType: TextInputType.multiline,
-              maxLines: 3,
-              validator: con.validatorMessage,
-              onSaved: con.onSavedMessage,
             ),
-          ),
-          RaisedButton(
-            child: Text('Send'),
-            onPressed: con.sendMessage,
-          ),
-        ],
+            RaisedButton(
+              child: Text('Send'),
+              onPressed: con.sendMessage,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -161,12 +167,11 @@ class _Controller {
         createdAt: DateTime.now(),
         createdBy: _state.user.uid,
         displayName: _state.user.displayName,
-        text: message,
+        text: this.message,
       );
       await FireBaseController.sendGroupChatMessage(m: m, g: _state.groupChat);
       _state.render(() {
         _state.messages.add(m);
-        _state.groupChat.messages.add(m.serialize());
       });
       FocusScope.of(_state.context).unfocus();
       _state.formKey.currentState.reset();
@@ -181,13 +186,15 @@ class _Controller {
 
   void addMembers() async {
     try {
-      await Navigator.pushNamed(_state.context, FriendsListScreen.routeName,
+      var result = await Navigator.pushNamed(
+          _state.context, FriendsListScreen.routeName,
           arguments: {
             'friends': _state.friends,
             'user': _state.user,
             'groupChat': _state.groupChat,
-            'groupChatAdd': true
+            'groupChatAdd': true,
           });
+      _state.render(() => _state.members = result);
     } catch (e) {
       MyDialog.info(
         context: _state.context,
@@ -213,8 +220,12 @@ class _Controller {
             );
             await FireBaseController.leaveGroupChat(
                 toLeave: _state.members[index], g: _state.groupChat, m: m);
+            _state.render(() {
+              _state.members.removeAt(index);
+              _state.messages.add(m);
+            });
             Navigator.of(_state.context).pop();
-            _state.render(() => _state.members.removeAt(index));
+            Navigator.of(_state.context).pop();
           } catch (e) {
             MyDialog.info(
               context: _state.context,

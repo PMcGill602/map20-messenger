@@ -103,11 +103,12 @@ class _GroupChatsState extends State<GroupChatsScreen> {
                                             con.leave(groupChats[index]))
                                     : IconButton(
                                         icon: Icon(Icons.close),
-                                        onPressed: con.delete),
+                                        onPressed: () =>
+                                            con.delete(groupChats[index])),
                               ],
                             ),
-                            onTap: () => con
-                                .groupChatDetailedNavigate(groupChats[index]),
+                            onTap: () => con.groupChatDetailedNavigate(
+                                groupChats[index], index),
                           ),
                         ))
                 : Text('No group chats')),
@@ -141,23 +142,25 @@ class _Controller {
     }
   }
 
-  void groupChatDetailedNavigate(GroupChat g) async {
+  void groupChatDetailedNavigate(GroupChat g, int index) async {
     try {
       var m = <Message>[];
       var members = <StoredUserInfo>[];
-      for (var message in g.messages) {
+      var groupChat = await FireBaseController.getSingleGroupChat(g: g);
+      for (var message in groupChat.messages) {
         m.add(Message.deserialize(message));
       }
       members = await FireBaseController.getGroupChatMembers(g);
-      await Navigator.pushNamed(
+      var updatedGroupChat = await Navigator.pushNamed(
           _state.context, GroupChatDetailedScreen.routeName,
           arguments: {
-            'groupChat': g,
+            'groupChat': groupChat,
             'messages': m,
             'members': members,
             'user': _state.user,
             'friends': _state.friends
           });
+      _state.render(() => _state.groupChats[index] = updatedGroupChat);
     } catch (e) {
       MyDialog.info(
         context: _state.context,
@@ -167,17 +170,27 @@ class _Controller {
     }
   }
 
-  void delete() {}
+  void delete(GroupChat g) async {
+    try {
+      await FireBaseController.deleteGroupChat(g: g);
+      _state.render(() => _state.groupChats.remove(g));
+    } catch (e) {
+      MyDialog.info(
+        context: _state.context,
+        title: 'Error deleting group chat',
+        content: e.message ?? e.toString(),
+      );
+    }
+  }
 
   void leave(GroupChat g) async {
     var m = Message(
-        createdAt: DateTime.now(),
-        createdBy: null,
-        displayName: "System message",
-        text: "${_state.user.displayName} has left the group chat",
-      );
+      createdAt: DateTime.now(),
+      createdBy: null,
+      displayName: "System message",
+      text: "${_state.user.displayName} has left the group chat",
+    );
     try {
-      
       await FireBaseController.leaveGroupChat(toLeave: _state.user, g: g, m: m);
       _state.render(() => _state.groupChats.remove(g));
     } catch (e) {

@@ -28,10 +28,6 @@ class _SignUpState extends State<SignUpScreen> {
           key: formKey,
           child: Column(
             children: <Widget>[
-              Text(
-                'Create an account',
-                style: TextStyle(fontSize: 25.0),
-              ),
               TextFormField(
                 decoration: InputDecoration(hintText: 'Email'),
                 keyboardType: TextInputType.emailAddress,
@@ -119,7 +115,6 @@ class _Controller {
   }
 
   String validatorDisplayName(String value) {
-    // check against names in db
     if (value.length < 3) {
       return 'Minimum 3 characters';
     } else

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:messengerapp/controller/firebasecontroller.dart';
+import 'package:messengerapp/model/post.dart';
 import 'package:messengerapp/model/storeduserinfo.dart';
 import 'package:messengerapp/screens/home_screen.dart';
 import 'package:messengerapp/screens/signup_screen.dart';
@@ -34,15 +35,21 @@ class _SignInState extends State<SignInScreen> {
           key: formKey,
           child: Column(
             children: <Widget>[
+              SizedBox(height: 15,),
               Stack(
                 children: <Widget>[
-                  Image.asset('assets/images/letter.png'),
+                  Container(
+                    width: MediaQuery.of(context).size.width / 2,
+                      child: Image.asset(
+                    'assets/images/envelope.png',
+                    fit: BoxFit.fill,
+                  )),
                   Positioned(
-                    top: 50.0,
-                    left: 0,
+                    top: 40.0,
+                    left: 35,
                     child: Text(
                       'Messenger',
-                      style: TextStyle(color: Colors.red, fontSize: 25.0),
+                      style: TextStyle(color: Colors.white, fontSize: 25.0, fontFamily: 'RussoOne'),
                     ),
                   ),
                 ],
@@ -117,10 +124,16 @@ class _Controller {
     StoredUserInfo thisUser;
     thisUser = await FireBaseController.getThisUser(user: user);
     List<StoredUserInfo> friends =
-          await FireBaseController.getFriends(user: thisUser);
+        await FireBaseController.getFriends(user: thisUser);
+    List<Post> friendPosts =
+        await FireBaseController.getFriendPosts(user: thisUser);
     MyDialog.circularProgressEnd(_state.context);
     Navigator.pushReplacementNamed(_state.context, HomeScreen.routeName,
-        arguments: {'user': thisUser, 'friends' : friends});
+        arguments: {
+          'user': thisUser,
+          'friends': friends,
+          'friendPosts': friendPosts
+        });
   }
 
   String validatorEmail(String value) {

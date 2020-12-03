@@ -10,6 +10,7 @@ import 'package:messengerapp/screens/profile_screen.dart';
 import 'package:messengerapp/screens/search_screen.dart';
 import 'package:messengerapp/screens/signin_screen.dart';
 import 'package:messengerapp/screens/views/mydialog.dart';
+import 'package:messengerapp/screens/views/myimageview.dart';
 
 class HomeScreen extends StatefulWidget {
   static const routeName = '/signInScreen/homeScreen';
@@ -23,6 +24,7 @@ class _HomeState extends State<HomeScreen> {
   _Controller con;
   StoredUserInfo user;
   List<StoredUserInfo> friends;
+  List<Post> friendPosts;
   @override
   void initState() {
     super.initState();
@@ -36,46 +38,89 @@ class _HomeState extends State<HomeScreen> {
     Map arg = ModalRoute.of(context).settings.arguments;
     user ??= arg['user'];
     friends ??= arg['friends'];
+    friendPosts ??= arg['friendPosts'];
     return Scaffold(
       appBar: AppBar(
         title: Text('Home'),
+        actions: [
+          IconButton(icon: Icon(Icons.search), onPressed: con.searchNavigate)
+        ],
       ),
       drawer: Drawer(
         child: ListView(
           children: <Widget>[
             UserAccountsDrawerHeader(
-                //currentAccountPicture
+                currentAccountPicture: ClipOval(
+                    child: MyImageView.network(
+                  imageUrl: user.photoUrl,
+                  context: context,
+                )),
                 accountName: Text(user.email),
                 accountEmail: Text(user.displayName ?? 'N/A')),
+            ListTile(
+              leading: Icon(Icons.person),
+              title: Text('Profile'),
+              onTap: con.profileNavigate,
+            ),
+            ListTile(
+              leading: Icon(Icons.people),
+              title: Text('Friends'),
+              onTap: con.friendsListNavigate,
+            ),
+            ListTile(
+              leading: Icon(Icons.person_add),
+              title: Text('Friend Requests'),
+              onTap: con.friendRequestsNavigate,
+            ),
+            ListTile(
+              leading: Icon(Icons.chat_bubble),
+              title: Text('Group Chats'),
+              onTap: con.groupChatsNavigate,
+            ),
             ListTile(
               leading: Icon(Icons.exit_to_app),
               title: Text('Sign Out'),
               onTap: con.signOut,
             ),
-            ListTile(
-              leading: Icon(Icons.people),
-              title: Text('Friend Requests'),
-              onTap: con.friendRequestsNavigate,
-            ),
           ],
         ),
       ),
       body: Column(children: <Widget>[
-        RaisedButton(
-          child: Text('Find friends'),
-          onPressed: con.searchNavigate,
-        ),
-        RaisedButton(
-          child: Text('My profile'),
-          onPressed: con.profileNavigate,
-        ),
-        RaisedButton(
-          child: Text('Friends list'),
-          onPressed: con.friendsListNavigate,
-        ),
-        RaisedButton(
-          child: Text('Group chats'),
-          onPressed: con.groupChatsNavigate,
+        Flexible(
+          child: friendPosts.length != 0
+              ? ListView.builder(
+                  itemCount: friendPosts.length,
+                  itemBuilder: (BuildContext context, int index) => Container(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: ListTile(
+                                leading: ClipOval(
+                                    child: MyImageView.network(
+                                        imageUrl: friends
+                                            .where((element) =>
+                                                element.uid ==
+                                                friendPosts[index].createdBy)
+                                            .first
+                                            .photoUrl,
+                                        context: context)),
+                                title: Text(friendPosts[index].message),
+                                subtitle: Text(friends.where((element) => element.uid == friendPosts[index].createdBy).first.displayName),
+                              ),
+                            ),
+                            SizedBox(
+                              height: 20.0,
+                            )
+                          ],
+                        ),
+                      ))
+              : Container(
+                  alignment: Alignment.topCenter,
+                  child: Text(
+                    'No posts from friends',
+                    style: TextStyle(fontSize: 20.0),
+                  ),
+                ),
         ),
       ]),
     );
@@ -105,14 +150,17 @@ class _Controller {
     try {
       List<Post> posts;
       posts = await FireBaseController.getPosts(user: _state.user);
-      await Navigator.pushNamed(_state.context, ProfileScreen.routeName,
+      var updatedProfile = await Navigator.pushNamed(
+          _state.context, ProfileScreen.routeName,
           arguments: {
             'profile': _state.user,
             'user': _state.user,
             'posts': posts,
             'friends': true,
           });
-      _state.render(() {});
+      _state.render(() {
+        _state.user = updatedProfile;
+      });
     } catch (e) {
       MyDialog.info(
         context: _state.context,
@@ -126,8 +174,13 @@ class _Controller {
     try {
       List<StoredUserInfo> requests =
           await FireBaseController.getRequests(user: _state.user);
-      await Navigator.pushNamed(_state.context, FriendRequestsScreen.routeName,
-          arguments: {'user': _state.user, 'requests': requests});
+      var result = await Navigator.pushNamed(
+          _state.context, FriendRequestsScreen.routeName, arguments: {
+        'user': _state.user,
+        'requests': requests,
+        'friends': _state.friends
+      });
+      _state.render(() => _state.friends = result);
     } catch (e) {
       MyDialog.info(
         context: _state.context,
@@ -135,13 +188,17 @@ class _Controller {
         content: e.message ?? e.toString(),
       );
     }
-    _state.render(() {});
   }
 
   void friendsListNavigate() async {
     try {
       await Navigator.pushNamed(_state.context, FriendsListScreen.routeName,
-          arguments: {'user': _state.user, 'friends': _state.friends, 'groupChat': null, 'groupChatAdd' : false});
+          arguments: {
+            'user': _state.user,
+            'friends': _state.friends,
+            'groupChat': null,
+            'groupChatAdd': false
+          });
     } catch (e) {
       MyDialog.info(
         context: _state.context,
@@ -153,9 +210,14 @@ class _Controller {
 
   void groupChatsNavigate() async {
     try {
-      List<GroupChat> groupChats = await FireBaseController.getGroupChats(user: _state.user);
+      List<GroupChat> groupChats =
+          await FireBaseController.getGroupChats(user: _state.user);
       await Navigator.pushNamed(_state.context, GroupChatsScreen.routeName,
-          arguments: {'user': _state.user, 'friends': _state.friends, 'groupChats' : groupChats});
+          arguments: {
+            'user': _state.user,
+            'friends': _state.friends,
+            'groupChats': groupChats
+          });
     } catch (e) {
       MyDialog.info(
         context: _state.context,

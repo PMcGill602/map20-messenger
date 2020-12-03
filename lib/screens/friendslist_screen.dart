@@ -6,7 +6,7 @@ import 'package:messengerapp/model/message.dart';
 import 'package:messengerapp/model/storeduserinfo.dart';
 import 'package:messengerapp/screens/messages_screen.dart';
 import 'package:messengerapp/screens/views/mydialog.dart';
-
+import 'package:messengerapp/screens/views/myimageview.dart';
 
 class FriendsListScreen extends StatefulWidget {
   static const routeName =
@@ -23,8 +23,9 @@ class _FriendsListState extends State<FriendsListScreen> {
   List<StoredUserInfo> friends;
   GroupChat groupChat;
   bool groupChatAdd;
+  List<StoredUserInfo> inGroupChat = [];
+  List<StoredUserInfo> added = [];
 
-  
   @override
   void initState() {
     super.initState();
@@ -39,43 +40,88 @@ class _FriendsListState extends State<FriendsListScreen> {
     friends ??= arg['friends'];
     groupChat ??= arg['groupChat'];
     groupChatAdd ??= arg['groupChatAdd'];
-    return Scaffold(
-        appBar: AppBar(
-          title: Text('Friends list'),
-        ),
-        body: friends.isNotEmpty
-            ? ListView.builder(
-                itemCount: friends.length,
-                itemBuilder: (BuildContext context, int index) => Container(
-                      child: ListTile(
-                        leading: Icon(Icons.face),
-                        title: Text(friends[index].displayName),
-                        subtitle: Text(friends[index].email),
-                        trailing: Wrap(
-                          children: <Widget>[
-                            groupChatAdd
-                                ? SizedBox(
-                                    width: 0,
-                                  )
-                                : IconButton(
-                                    icon: Icon(Icons.mail),
-                                    onPressed: () => con.messagesNavigate(
-                                        friends[index], user)),
-                            groupChatAdd
-                                ? IconButton(
-                                    icon: Icon(Icons.check),
-                                    onPressed: () =>
-                                        con.addToGroupChat(friends[index]),
-                                  )
-                                : IconButton(
-                                    icon: Icon(Icons.close),
-                                    onPressed: () => con.unfriend(
-                                        friends[index], user, index))
-                          ],
-                        ),
+    return WillPopScope(
+      onWillPop:
+          groupChatAdd ? () => Future.value(false) : () => Future.value(true),
+      child: Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: groupChatAdd ? false : true,
+            title: Text('Friends list'),
+          ),
+          body: friends.isNotEmpty
+              ? Column(
+                  children: [
+                    ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: friends.length,
+                        itemBuilder: (BuildContext context, int index) =>
+                            Container(
+                              child: ListTile(
+                                leading: ClipOval(
+                                    child: MyImageView.network(
+                                        imageUrl: friends[index].photoUrl,
+                                        context: context)),
+                                title: Text(friends[index].displayName),
+                                subtitle: Text(friends[index].email),
+                                trailing: Wrap(
+                                  children: <Widget>[
+                                    groupChatAdd
+                                        ? SizedBox(
+                                            width: 0,
+                                          )
+                                        : IconButton(
+                                            icon: Icon(Icons.mail),
+                                            onPressed: () =>
+                                                con.messagesNavigate(
+                                                    friends[index], user)),
+                                    groupChatAdd
+                                        ? IconButton(
+                                            icon: Icon(Icons.check),
+                                            onPressed: () => con
+                                                .addToGroupChat(friends[index]),
+                                          )
+                                        : IconButton(
+                                            icon: Icon(Icons.close),
+                                            onPressed: () => con.unfriend(
+                                                friends[index], user, index))
+                                  ],
+                                ),
+                              ),
+                            )),
+                    Container(
+                      child: groupChatAdd
+                          ? RaisedButton(
+                              child: Text('Return'),
+                              onPressed: con.returnToGroupChat,
+                            )
+                          : SizedBox(
+                              width: 0,
+                            ),
+                    )
+                  ],
+                )
+              : Column(
+                  children: [
+                    Container(
+                      alignment: Alignment.topCenter,
+                      child: Text(
+                        'No friends',
+                        style: TextStyle(fontSize: 15),
                       ),
-                    ))
-            : Text('No friends'));
+                    ),
+                    Container(
+                      child: groupChatAdd
+                          ? RaisedButton(
+                              child: Text('Return'),
+                              onPressed: con.returnToGroupChat,
+                            )
+                          : SizedBox(
+                              width: 0,
+                            ),
+                    ),
+                  ],
+                )),
+    );
   }
 }
 
@@ -93,7 +139,7 @@ class _Controller {
           m.add(Message.deserialize(message));
         }
       }
-      
+
       await Navigator.pushNamed(_state.context, MessagesScreen.routeName,
           arguments: {
             'user': user,
@@ -136,13 +182,31 @@ class _Controller {
     try {
       await FireBaseController.addToGroupChat(
           toAdd: toAdd, g: _state.groupChat);
+      _state.added.add(toAdd);
       MyDialog.info(
           context: _state.context, title: "Successfully added", content: '');
     } catch (e) {
       MyDialog.info(
         context: _state.context,
         title: 'Error adding user to group chat, try again later',
-        content: e.message ?? e.toString(),
+        content: e.toString(),
+      );
+    }
+  }
+
+  void returnToGroupChat() async {
+    try {
+      for (var user in _state.added) {
+        _state.groupChat.userIds.add(user.uid);
+      }
+      var updatedMembers =
+          await FireBaseController.getGroupChatMembers(_state.groupChat);
+      Navigator.pop(_state.context, updatedMembers);
+    } catch (e) {
+      MyDialog.info(
+        context: _state.context,
+        title: 'Error returning to group chat',
+        content: e.toString(),
       );
     }
   }

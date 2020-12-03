@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:messengerapp/model/chat.dart';
 import 'package:messengerapp/model/groupchat.dart';
@@ -27,6 +30,7 @@ class FireBaseController {
     StoredUserInfo storedNewUser = StoredUserInfo(
         uid: newUser.uid,
         email: newUser.email,
+        biography: 'Hello World!',
         displayName: newUser.displayName);
     await FirebaseFirestore.instance
         .collection(StoredUserInfo.COLLECTION)
@@ -69,6 +73,23 @@ class FireBaseController {
       return result;
     } else
       return null;
+  }
+
+  static Future<List<Post>> getFriendPosts(
+      {@required StoredUserInfo user}) async {
+    var posts = <Post>[];
+    if (user.friends.length != 0) {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection(Post.COLLECTION)
+          .where(Post.CREATED_BY, whereIn: user.friends)
+          .get();
+      if (snapshot != null && snapshot.docs.length != 0) {
+        for (var doc in snapshot.docs) {
+          posts.add(Post.deserialize(doc.data(), doc.id));
+        }
+      }
+    }
+    return posts;
   }
 
   static Future<List<StoredUserInfo>> getRequests(
@@ -165,6 +186,25 @@ class FireBaseController {
         .add(p.serialize());
   }
 
+  static Future<String> saveProfile(
+      {@required StoredUserInfo user, @required File image}) async {
+    String url = user.photoUrl;
+    if (image != null) {
+      String filePath =
+          '${StoredUserInfo.IMAGE_FOLDER}/${user.uid}/${user.uid}';
+      UploadTask uploadTask =
+          FirebaseStorage.instance.ref().child(filePath).putFile(image);
+      await uploadTask.whenComplete(
+          () async => url = await uploadTask.snapshot.ref.getDownloadURL());
+      user.photoUrl = url;
+    }
+    await FirebaseFirestore.instance
+        .collection(StoredUserInfo.COLLECTION)
+        .doc(user.docId)
+        .update(user.serialize());
+    return url;
+  }
+
   static Future<List<StoredUserInfo>> getFriends(
       {@required StoredUserInfo user}) async {
     var friends = <StoredUserInfo>[];
@@ -195,6 +235,12 @@ class FireBaseController {
         .collection(StoredUserInfo.COLLECTION)
         .doc(toUnfriend.docId)
         .update(toUnfriend.serialize());
+    var chat = await FireBaseController.getChat(user: user, friend: toUnfriend);
+    print(chat.docId);
+    await FirebaseFirestore.instance
+        .collection(Chat.COLLECTION)
+        .doc(chat.docId)
+        .delete();
   }
 
   static Future<Chat> getChat(
@@ -271,6 +317,20 @@ class FireBaseController {
     return groupChats;
   }
 
+  static Future<GroupChat> getSingleGroupChat({@required GroupChat g}) async {
+    DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection(GroupChat.COLLECTION).doc(g.docId).get();
+    var groupChat = GroupChat.deserialize(snapshot.data(), g.docId);
+    return groupChat; 
+    
+  }
+
+  static Future deleteGroupChat({@required GroupChat g}) async {
+    await FirebaseFirestore.instance
+        .collection(GroupChat.COLLECTION)
+        .doc(g.docId)
+        .delete();
+  }
+
   static Future addToGroupChat(
       {@required StoredUserInfo toAdd, @required GroupChat g}) async {
     await FirebaseFirestore.instance
@@ -313,6 +373,6 @@ class FireBaseController {
     await FirebaseFirestore.instance
         .collection(GroupChat.COLLECTION)
         .doc(g.docId)
-        .update(g.serialize());
+        .update({'name': g.name});
   }
 }

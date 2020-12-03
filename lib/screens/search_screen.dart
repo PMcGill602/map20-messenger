@@ -4,6 +4,7 @@ import 'package:messengerapp/model/post.dart';
 import 'package:messengerapp/model/storeduserinfo.dart';
 import 'package:messengerapp/screens/profile_screen.dart';
 import 'package:messengerapp/screens/views/mydialog.dart';
+import 'package:messengerapp/screens/views/myimageview.dart';
 
 class SearchScreen extends StatefulWidget {
   static const routeName = '/signInScreen/homeScreen/searchScreen';
@@ -18,6 +19,7 @@ class _SearchState extends State<SearchScreen> {
   StoredUserInfo user;
   var formKey = GlobalKey<FormState>();
   List<StoredUserInfo> searchResults;
+  bool searched = false;
   @override
   void initState() {
     super.initState();
@@ -47,7 +49,7 @@ class _SearchState extends State<SearchScreen> {
               child: TextFormField(
                 decoration: InputDecoration(
                     hintText: 'Search for users',
-                    fillColor: Colors.white,
+                    fillColor: Colors.black,
                     filled: true),
                 autocorrect: false,
                 onSaved: con.onSavedSearchKey,
@@ -57,21 +59,26 @@ class _SearchState extends State<SearchScreen> {
           IconButton(icon: Icon(Icons.search), onPressed: con.search),
         ],
       ),
-      body: searchResults == null
-          ? Text(
-              'No results',
-              style: TextStyle(fontSize: 30.0),
-            )
-          : ListView.builder(
-              itemCount: searchResults.length,
-              itemBuilder: (BuildContext context, int index) => Container(
-                    child: ListTile(
-                      leading: Icon(Icons.face), //user profile image
-                      title: Text(searchResults[index].displayName),
-                      subtitle: Text(searchResults[index].email),
-                      onTap: () => con.profile(index),
-                    ),
-                  )),
+      body: searched == true
+          ? searchResults == null
+              ? Container(
+                alignment: Alignment.center,
+                child: Text(
+                    'No results',
+                    style: TextStyle(fontSize: 20.0),
+                  ),
+              )
+              : ListView.builder(
+                  itemCount: searchResults.length,
+                  itemBuilder: (BuildContext context, int index) => Container(
+                        child: ListTile(
+                          leading: ClipOval(child: MyImageView.network(imageUrl: searchResults[index].photoUrl, context: context)),
+                          title: Text(searchResults[index].displayName),
+                          subtitle: Text(searchResults[index].email),
+                          onTap: () => con.profile(index),
+                        ),
+                      ))
+          : Text(''),
     );
   }
 }
@@ -93,13 +100,17 @@ class _Controller {
     } else {
       results = await FireBaseController.searchUsers(searchKey: searchKey);
     }
-    _state.render(() => _state.searchResults = results);
+    _state.render(() {
+      _state.searchResults = results;
+      _state.searched = true;
+    });
   }
 
   void profile(int index) async {
     try {
       List<Post> posts;
-      posts = await FireBaseController.getPosts(user: _state.searchResults[index]);
+      posts =
+          await FireBaseController.getPosts(user: _state.searchResults[index]);
       bool friends = await FireBaseController.checkFriends(
           _state.user, _state.searchResults[index]);
       await Navigator.pushNamed(_state.context, ProfileScreen.routeName,
@@ -107,7 +118,7 @@ class _Controller {
             'profile': _state.searchResults[index],
             'user': _state.user,
             'friends': friends,
-            'posts' : posts,
+            'posts': posts,
           });
       _state.render(() {});
     } catch (e) {

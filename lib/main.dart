@@ -7,6 +7,7 @@ import 'package:messengerapp/screens/home_screen.dart';
 import 'package:messengerapp/screens/messages_screen.dart';
 import 'package:messengerapp/screens/post_screen.dart';
 import 'package:messengerapp/screens/profile_screen.dart';
+import 'package:messengerapp/screens/profileedit_screen.dart';
 import 'package:messengerapp/screens/search_screen.dart';
 import 'package:messengerapp/screens/signin_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -22,6 +23,15 @@ class MessengerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: Colors.red,
+        secondaryHeaderColor: Colors.yellow,
+        buttonColor: Colors.yellow[800],
+        accentColor: Colors.yellow[800],
+        
+      ),
       initialRoute: SignInScreen.routeName,
       routes: {
         SignInScreen.routeName: (context) => SignInScreen(),
@@ -29,6 +39,7 @@ class MessengerApp extends StatelessWidget {
         HomeScreen.routeName: (context) => HomeScreen(),
         SearchScreen.routeName: (context) => SearchScreen(),
         ProfileScreen.routeName: (context) => ProfileScreen(),
+        ProfileEditScreen.routeName: (context) => ProfileEditScreen(),
         FriendRequestsScreen.routeName: (context) => FriendRequestsScreen(),
         PostScreen.routeName: (context) => PostScreen(),
         FriendsListScreen.routeName: (context) => FriendsListScreen(),

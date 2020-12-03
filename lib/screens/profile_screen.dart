@@ -3,7 +3,9 @@ import 'package:messengerapp/controller/firebasecontroller.dart';
 import 'package:messengerapp/model/post.dart';
 import 'package:messengerapp/model/storeduserinfo.dart';
 import 'package:messengerapp/screens/post_screen.dart';
+import 'package:messengerapp/screens/profileedit_screen.dart';
 import 'package:messengerapp/screens/views/mydialog.dart';
+import 'package:messengerapp/screens/views/myimageview.dart';
 
 class ProfileScreen extends StatefulWidget {
   static const routeName = '/signInScreen/homeScreen/profileScreen';
@@ -37,6 +39,18 @@ class _ProfileState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile'),
+        actions: [
+          Container(
+              child: user.uid == profile.uid
+                  ? IconButton(
+                      icon: Icon(Icons.edit), onPressed: con.editNavigate)
+                  : !friends
+                      ? IconButton(
+                          icon: Icon(Icons.person_add),
+                          onPressed: con.sendRequest,
+                        )
+                      : SizedBox(width: 0))
+        ],
       ),
       floatingActionButton: user.uid == profile.uid
           ? FloatingActionButton(
@@ -45,19 +59,28 @@ class _ProfileState extends State<ProfileScreen> {
             )
           : null,
       body: Column(children: <Widget>[
-        Text(profile.email),
-        user.uid != profile.uid
-            ? friends
-                ? Text('We are friends')
-                : Column(
-                    children: <Widget>[
-                      Text('We are not friends'),
-                      RaisedButton(
-                          onPressed: con.sendRequest,
-                          child: Text('Send friend request'))
-                    ],
-                  )
-            : Text('Its me!'),
+        SizedBox(height: 15),
+        Text(
+          profile.displayName,
+          style: TextStyle(fontSize: 25),
+        ),
+        Text(
+          profile.email,
+          style: TextStyle(fontSize: 15),
+        ),
+        Container(
+            height: MediaQuery.of(context).size.height / 5,
+            alignment: Alignment.center,
+            child: ClipOval(
+                child: MyImageView.network(
+              imageUrl: profile.photoUrl,
+              context: context,
+            ))),
+        Container(
+          padding: EdgeInsets.fromLTRB(10, 5, 10, 5),
+          child: Text(profile.biography, style: TextStyle(fontSize: 15),),
+        ),
+        Divider(),
         Flexible(
           child: !friends && user.uid != profile.uid
               ? Text("Become friends to see this user's posts")
@@ -66,8 +89,11 @@ class _ProfileState extends State<ProfileScreen> {
                       itemCount: posts.length,
                       itemBuilder: (BuildContext context, int index) =>
                           Container(
-                            child: ListTile(
-                              title: Text(posts[index].message),
+                            child: Card(
+                                                          child: ListTile(
+                                leading: ClipOval(child: MyImageView.network(imageUrl: profile.photoUrl, context: context)),
+                                title: Text(posts[index].message),
+                              ),
                             ),
                           ))
                   : Text('No posts'),
@@ -107,5 +133,12 @@ class _Controller {
     await Navigator.pushNamed(_state.context, PostScreen.routeName,
         arguments: {'user': _state.user, 'posts': _state.posts});
     _state.render(() {});
+  }
+
+  void editNavigate() async {
+    var updatedProfile = await Navigator.pushNamed(_state.context, ProfileEditScreen.routeName,
+        arguments: {'user': _state.user});
+    _state.render(() => _state.profile = updatedProfile);
+    Navigator.pop(_state.context, updatedProfile);
   }
 }
