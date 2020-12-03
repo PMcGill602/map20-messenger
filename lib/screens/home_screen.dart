@@ -161,6 +161,7 @@ class _Controller {
       _state.render(() {
         _state.user = updatedProfile;
       });
+      Navigator.pop(_state.context);
     } catch (e) {
       MyDialog.info(
         context: _state.context,
